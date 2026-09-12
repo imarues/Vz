@@ -1,35 +1,7 @@
-const ICON_SVG = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Cinema Max">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#111827"/>
-      <stop offset="1" stop-color="#050814"/>
-    </linearGradient>
-    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2f7cff"/>
-      <stop offset="1" stop-color="#7a4dff"/>
-    </linearGradient>
-    <linearGradient id="m" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset=".55" stop-color="#dbe6ff"/>
-      <stop offset="1" stop-color="#8ca8ff"/>
-    </linearGradient>
-    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="7" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-  </defs>
-  <rect x="5" y="5" width="246" height="246" rx="54" fill="url(#bg)" stroke="url(#ring)" stroke-width="10"/>
-  <path d="M46 174V78h28l27 41 27-41h28v96h-28v-51l-27 39-27-39v51H46z" fill="url(#m)"/>
-  <g transform="translate(162 137) rotate(-12)" filter="url(#glow)">
-    <rect x="0" y="0" width="54" height="72" rx="10" fill="#5b5cff"/>
-    <rect x="8" y="10" width="38" height="10" rx="3" fill="#0b1020"/>
-    <rect x="8" y="31" width="12" height="12" rx="2" fill="#0b1020"/>
-    <rect x="34" y="31" width="12" height="12" rx="2" fill="#0b1020"/>
-    <rect x="8" y="52" width="12" height="12" rx="2" fill="#0b1020"/>
-    <rect x="34" y="52" width="12" height="12" rx="2" fill="#0b1020"/>
-  </g>
-</svg>`;
+import iconData from './icon-data.js';
+
+const APP_ICON_BASE64 = iconData;
+const ICON_URL = 'https://max.kiraplus.workers.dev/Cinemamax.jpg';
 
 function pageHtml() {
   return `<!doctype html>
@@ -62,7 +34,7 @@ h1{font-size:29px;margin:0 0 6px;letter-spacing:-.02em}.sub{color:var(--muted);f
   <div class="brandline">Cinema Max</div>
   <section class="card">
     <div class="hero">
-      <div class="icon-wrap"><img class="app-icon" src="/cinemamax-icon.svg?v=20" alt="Cinema Max"></div>
+      <div class="icon-wrap"><img class="app-icon" src="${ICON_URL}" alt="Cinema Max"></div>
       <h1>سينما ماكس</h1><div class="sub">أفلام ومسلسلات</div><span class="ver">الإصدار 1.0</span>
     </div>
     <div class="body">
@@ -94,7 +66,13 @@ export default {
   async fetch(request, env) {
     const url=new URL(request.url);
     if(request.method==='GET'&&(url.pathname==='/'||url.pathname==='/index.html'))return new Response(pageHtml(),{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store, no-cache, must-revalidate, max-age=0','pragma':'no-cache','expires':'0','x-content-type-options':'nosniff','referrer-policy':'no-referrer','x-frame-options':'DENY','permissions-policy':'camera=(), microphone=(), geolocation=(), payment=()'}});
-    if(request.method==='GET'&&url.pathname==='/cinemamax-icon.svg')return new Response(ICON_SVG,{headers:{'content-type':'image/svg+xml; charset=utf-8','cache-control':'public, max-age=86400','x-content-type-options':'nosniff'}});
+    if(request.method==='GET'&&url.pathname==='/Cinemamax.jpg'){
+      try{
+        const bin=atob(APP_ICON_BASE64);
+        const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));
+        return new Response(bytes,{headers:{'content-type':'image/jpeg','content-length':String(bytes.byteLength),'cache-control':'public, max-age=3600','x-content-type-options':'nosniff'}});
+      }catch{return new Response('Icon unavailable',{status:500})}
+    }
     if(request.method==='POST'&&url.pathname==='/api/certificates')return storeCertificateBundle(request,env);
     if(request.method==='GET'&&url.pathname==='/install'){const plistUrl=String(env.PLIST_URL||'').trim();if(!/^https:\/\//i.test(plistUrl))return new Response('PLIST_URL secret is not configured',{status:503});return new Response(null,{status:302,headers:{location:'itms-services://?action=download-manifest&url='+encodeURIComponent(plistUrl),'cache-control':'no-store'}})}
     if(request.method==='GET'&&url.pathname==='/health')return Response.json({ok:true,service:'cinema-max-installer'},{headers:{'cache-control':'no-store'}});
