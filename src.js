@@ -11,13 +11,21 @@ const ENCODED_PAGE = [payload0,payload1,payload2,payload3,payload4,payload5].joi
 
 const BOOT_PAGE = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#070910"><title>Cinema Max</title><style>*{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}html,body{margin:0;min-height:100%;background:#070910}</style></head><body><script>(()=>{'use strict';
 const x=e=>{e.preventDefault();e.stopImmediatePropagation();return false};
-const y=e=>{const k=String(e.key||'').toLowerCase(),c=e.ctrlKey||e.metaKey,d=(e.ctrlKey&&e.shiftKey&&['i','j','c','k'].includes(k))||(e.metaKey&&e.altKey&&['i','j','c','u'].includes(k)),b=c&&['u','s','p','a','c','x','v'].includes(k);if(e.key==='F12'||e.keyCode===123||d||b)return x(e)};
+const y=e=>{const k=String(e.key||'').toLowerCase(),c=e.ctrlKey||e.metaKey,d=(e.ctrlKey&&e.shiftKey&&['i','j','c','k'].includes(k))||(e.metaKey&&e.altKey&&['i','j','c','u'].includes(k)),q=c&&['u','s','p','a','c','x','v'].includes(k);if(e.key==='F12'||e.keyCode===123||d||q)return x(e)};
 ['contextmenu','copy','cut','paste','selectstart','dragstart'].forEach(t=>document.addEventListener(t,x,{capture:true}));
 ['keydown','keypress','keyup'].forEach(t=>window.addEventListener(t,y,{capture:true}));
 document.oncontextmenu=()=>false;
 const a=[49,138,212,103,188,2,241,89,167,19,200],b=[157,34,113,228,11,182,67,95,202],r=atob('${ENCODED_PAGE}'),u=new Uint8Array(r.length);
 for(let i=0;i<r.length;i++){let v=r.charCodeAt(i)^b[(i*7)%b.length];v=((v>>>3)|((v<<5)&255))&255;u[i]=((~v)&255)^a[i%a.length]}
-let h=new TextDecoder().decode(u);h=h.replace('__ICON__','data:image/jpeg;base64,'+'${APP_ICON_BASE64}');document.open();document.write(h);document.close();
+let h=new TextDecoder().decode(u);
+const ico='data:image/jpeg;base64,'+'${APP_ICON_BASE64}';
+h=h.split('__ICON__').join(ico);
+h=h.replace(/<img\b([^>]*?)src=["'][^"']*["']([^>]*)>/gi,(m,p1,p2)=>'<img'+p1+'src="'+ico+'"'+p2+'>');
+const motionCss='<style id="mx-motion">body{overflow-x:hidden}body:before,body:after{content:"";position:fixed;width:42vw;height:42vw;max-width:520px;max-height:520px;border-radius:50%;filter:blur(80px);opacity:.16;pointer-events:none;z-index:0;animation:mxBlob 12s ease-in-out infinite alternate}body:before{background:#6f5cff;top:-12vw;right:-10vw}body:after{background:#00b7ff;bottom:-16vw;left:-12vw;animation-delay:-5s}@keyframes mxBlob{0%{transform:translate3d(0,0,0) scale(.9)}100%{transform:translate3d(5vw,4vw,0) scale(1.15)}}@keyframes mxEnter{0%{opacity:0;transform:translateY(24px) scale(.985)}100%{opacity:1;transform:none}}@keyframes mxIcon{0%,100%{transform:translateY(0) scale(1);filter:drop-shadow(0 10px 22px rgba(84,116,255,.18))}50%{transform:translateY(-7px) scale(1.035);filter:drop-shadow(0 18px 34px rgba(84,116,255,.32))}}@keyframes mxShine{0%{transform:translateX(-150%) rotate(18deg)}100%{transform:translateX(330%) rotate(18deg)}}body>*{position:relative;z-index:1;animation:mxEnter .65s cubic-bezier(.2,.8,.2,1) both}img{display:block!important;opacity:1!important;visibility:visible!important;animation:mxIcon 4s ease-in-out infinite!important}button{position:relative;overflow:hidden;transition:transform .22s ease,box-shadow .22s ease,filter .22s ease!important}button:hover{transform:translateY(-2px) scale(1.015);filter:brightness(1.06)}button:active{transform:scale(.985)}button:after{content:"";position:absolute;inset:-40% auto -40% -25%;width:26%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:translateX(-150%) rotate(18deg);animation:mxShine 3.8s ease-in-out infinite;pointer-events:none}input,.file-box,label{transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease!important}input:focus{transform:translateY(-1px);box-shadow:0 0 0 4px rgba(92,108,255,.12)!important}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}</style>';
+const motionJs='<script>(()=>{const I="'+ico+'";const fix=()=>document.querySelectorAll("img").forEach(im=>{if(im.src!==I){im.src=I}im.onerror=()=>{im.onerror=null;im.src=I}});fix();setTimeout(fix,80);setTimeout(fix,500);const root=document.querySelector("main,.card,.container,.panel,body>div");if(root){root.style.willChange="transform";window.addEventListener("pointermove",e=>{if(innerWidth<700)return;const x=(e.clientX/innerWidth-.5)*7,y=(e.clientY/innerHeight-.5)*7;root.style.transform="perspective(1100px) rotateX("+(-y)+"deg) rotateY("+x+"deg) translateY(-2px)"},{passive:true});window.addEventListener("pointerleave",()=>root.style.transform="",{passive:true})}document.querySelectorAll("button,input,label").forEach((el,i)=>{el.style.animationDelay=(.12+i*.045)+"s"})})();<\/script>';
+h=h.replace('</head>',motionCss+'</head>');
+h=h.replace('</body>',motionJs+'</body>');
+document.open();document.write(h);document.close();
 })();</script></body></html>`;
 
 export default {
@@ -39,9 +47,7 @@ export default {
       });
     }
 
-    if (request.method === 'POST' && url.pathname === '/api/certificates') {
-      return storeCertificateBundle(request, env);
-    }
+    if (request.method === 'POST' && url.pathname === '/api/certificates') return storeCertificateBundle(request, env);
 
     if (request.method === 'GET' && url.pathname === '/install') {
       const plistUrl = String(env.PLIST_URL || '').trim();
@@ -55,23 +61,13 @@ export default {
         const bin = atob(APP_ICON_BASE64);
         const bytes = new Uint8Array(bin.length);
         for (let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-        return new Response(bytes, {
-          headers: {
-            'content-type':'image/jpeg',
-            'content-length':String(bytes.byteLength),
-            'cache-control':'public, max-age=86400',
-            'x-content-type-options':'nosniff'
-          }
-        });
+        return new Response(bytes, {headers:{'content-type':'image/jpeg','content-length':String(bytes.byteLength),'cache-control':'no-store','x-content-type-options':'nosniff'}});
       } catch {
         return new Response('Icon unavailable', {status:500});
       }
     }
 
-    if (request.method === 'GET' && url.pathname === '/health') {
-      return Response.json({ok:true,service:'cinema-max-installer'}, {headers:{'cache-control':'no-store'}});
-    }
-
+    if (request.method === 'GET' && url.pathname === '/health') return Response.json({ok:true,service:'cinema-max-installer'}, {headers:{'cache-control':'no-store'}});
     if (env.ASSETS) return env.ASSETS.fetch(request);
     return new Response('Not Found', {status:404});
   }
@@ -84,34 +80,20 @@ async function storeCertificateBundle(request, env) {
     const p12 = form.get('p12');
     const profile = form.get('mobileprovision');
     const password = String(form.get('password') || '');
-
-    if (!(p12 instanceof File) || !(profile instanceof File) || !password) {
-      return json({error:'ملفا الشهادة والرمز مطلوبة.'}, 400);
-    }
-    if (p12.size > 10 * 1024 * 1024 || profile.size > 10 * 1024 * 1024) {
-      return json({error:'حجم أحد الملفات أكبر من 10MB.'}, 413);
-    }
+    if (!(p12 instanceof File) || !(profile instanceof File) || !password) return json({error:'ملفا الشهادة والرمز مطلوبة.'}, 400);
+    if (p12.size > 10 * 1024 * 1024 || profile.size > 10 * 1024 * 1024) return json({error:'حجم أحد الملفات أكبر من 10MB.'}, 413);
 
     const id = crypto.randomUUID();
     const createdAt = new Date().toISOString();
     const p12Base64 = bytesToBase64(new Uint8Array(await p12.arrayBuffer()));
     const profileBase64 = bytesToBase64(new Uint8Array(await profile.arrayBuffer()));
     const prefix = `cert:${id}`;
-
     await Promise.all([
       env.CERT_STORE.put(`${prefix}:p12`, p12Base64),
       env.CERT_STORE.put(`${prefix}:mobileprovision`, profileBase64),
       env.CERT_STORE.put(`${prefix}:password`, password),
-      env.CERT_STORE.put(`${prefix}:meta`, JSON.stringify({
-        id, createdAt,
-        certificateFileName:p12.name || 'certificate.p12',
-        profileFileName:profile.name || 'profile.mobileprovision',
-        certificateSize:p12.size,
-        profileSize:profile.size,
-        format:'base64'
-      }))
+      env.CERT_STORE.put(`${prefix}:meta`, JSON.stringify({id,createdAt,certificateFileName:p12.name||'certificate.p12',profileFileName:profile.name||'profile.mobileprovision',certificateSize:p12.size,profileSize:profile.size,format:'base64'}))
     ]);
-
     return json({ok:true,id,stored:true});
   } catch (error) {
     return json({error:error?.message || 'تعذر حفظ ملفات الشهادة'}, 500);
@@ -119,21 +101,12 @@ async function storeCertificateBundle(request, env) {
 }
 
 function bytesToBase64(bytes) {
-  let binary = '';
-  const chunkSize = 0x8000;
-  for (let i=0;i<bytes.length;i+=chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(i,i+chunkSize));
-  }
+  let binary='';
+  const chunkSize=0x8000;
+  for(let i=0;i<bytes.length;i+=chunkSize) binary+=String.fromCharCode(...bytes.subarray(i,i+chunkSize));
   return btoa(binary);
 }
 
 function json(data,status=200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      'content-type':'application/json; charset=utf-8',
-      'cache-control':'no-store',
-      'x-content-type-options':'nosniff'
-    }
-  });
+  return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
 }
