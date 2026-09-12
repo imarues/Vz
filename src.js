@@ -7,22 +7,37 @@ import payload4 from './payload/chunk4.js';
 import payload5 from './payload/chunk5.js';
 
 const APP_ICON_BASE64 = iconData;
-const ENCODED_PAGE = [payload0,payload1,payload2,payload3,payload4,payload5].join('');
+const INNER_PAYLOAD = [payload0,payload1,payload2,payload3,payload4,payload5].join('');
+const OUTER_KEY = [91,14,233,67,172,39,201,8,145,254,63,117,190];
+const WRAPPED_PAYLOAD = outerWrap(INNER_PAYLOAD);
 
-const BOOT_PAGE = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#070910"><title>Cinema Max</title><style>*{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}html,body{margin:0;min-height:100%;background:#070910}</style></head><body><script>(()=>{'use strict';
-const stop=e=>{e.preventDefault();e.stopImmediatePropagation();return false};
-const block=e=>{const k=String(e.key||'').toLowerCase();const c=e.ctrlKey||e.metaKey;const dev=(e.ctrlKey&&e.shiftKey&&['i','j','c','k'].includes(k))||(e.metaKey&&e.altKey&&['i','j','c','u'].includes(k));const basic=c&&['u','s','p','a','c','x','v'].includes(k);if(e.key==='F12'||e.keyCode===123||dev||basic)return stop(e)};
+function outerWrap(text) {
+  const bytes = new TextEncoder().encode(text);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    let v = bytes[i] ^ OUTER_KEY[i % OUTER_KEY.length];
+    v = ((v << 3) | (v >>> 5)) & 255;
+    v = (v + ((i * 17 + 43) & 255)) & 255;
+    binary += String.fromCharCode(v);
+  }
+  return btoa(binary);
+}
+
+const BOOT_PAGE = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#070910"><title>Cinema Max</title><style>*{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}html,body{margin:0;min-height:100%;background:#070910}img{-webkit-user-drag:none!important}</style></head><body><script>(()=>{'use strict';
+const stop=e=>{try{e.preventDefault();e.stopImmediatePropagation()}catch{}return false};
+const block=e=>{const k=String(e.key||'').toLowerCase(),ctrl=e.ctrlKey||e.metaKey,shift=e.shiftKey,alt=e.altKey;const dev=(e.key==='F12'||e.keyCode===123)||(ctrl&&shift&&['i','j','c','k'].includes(k))||(e.metaKey&&alt&&['i','j','c','u'].includes(k));const src=ctrl&&['u','s','p','a','c','x','v'].includes(k);if(dev||src)return stop(e)};
 ['contextmenu','copy','cut','paste','selectstart','dragstart'].forEach(t=>document.addEventListener(t,stop,{capture:true}));
 ['keydown','keypress','keyup'].forEach(t=>window.addEventListener(t,block,{capture:true}));
 document.oncontextmenu=()=>false;
-const a=[49,138,212,103,188,2,241,89,167,19,200],b=[157,34,113,228,11,182,67,95,202],r=atob('${ENCODED_PAGE}'),u=new Uint8Array(r.length);
+
+const ok=[91,14,233,67,172,39,201,8,145,254,63,117,190],w=atob('${WRAPPED_PAYLOAD}'),wb=new Uint8Array(w.length);
+for(let i=0;i<w.length;i++){let v=(w.charCodeAt(i)-((i*17+43)&255)+256)&255;v=((v>>>3)|((v<<5)&255))&255;wb[i]=v^ok[i%ok.length]}
+const inner=new TextDecoder().decode(wb);
+const a=[49,138,212,103,188,2,241,89,167,19,200],b=[157,34,113,228,11,182,67,95,202],r=atob(inner),u=new Uint8Array(r.length);
 for(let i=0;i<r.length;i++){let v=r.charCodeAt(i)^b[(i*7)%b.length];v=((v>>>3)|((v<<5)&255))&255;u[i]=((~v)&255)^a[i%a.length]}
 let h=new TextDecoder().decode(u);
-const ico='data:image/jpeg;base64,'+'${APP_ICON_BASE64}';
-h=h.split('__ICON__').join(ico);
-h=h.replace(/<img\\b([^>]*?)src=["'][^"']*["']([^>]*)>/gi,(m,p1,p2)=>'<img'+p1+'src="'+ico+'"'+p2+'>');
-const motionCss='<style id="mx-motion">html{background:#070910}body{overflow-x:hidden}body:before,body:after{content:"";position:fixed;width:44vw;height:44vw;max-width:560px;max-height:560px;border-radius:50%;filter:blur(90px);opacity:.18;pointer-events:none;z-index:0;animation:mxBlob 11s ease-in-out infinite alternate}body:before{background:#725cff;top:-14vw;right:-10vw}body:after{background:#00b9ff;bottom:-18vw;left:-12vw;animation-delay:-5s}@keyframes mxBlob{0%{transform:translate3d(0,0,0) scale(.92)}100%{transform:translate3d(5vw,4vw,0) scale(1.16)}}@keyframes mxEnter{0%{opacity:0;transform:translateY(22px) scale(.985)}100%{opacity:1;transform:none}}@keyframes mxIcon{0%,100%{transform:translateY(0) scale(1);filter:drop-shadow(0 10px 22px rgba(84,116,255,.18))}50%{transform:translateY(-8px) scale(1.04);filter:drop-shadow(0 18px 34px rgba(84,116,255,.34))}}@keyframes mxPulse{0%,100%{box-shadow:0 0 0 rgba(79,100,255,0)}50%{box-shadow:0 0 32px rgba(79,100,255,.18)}}@keyframes mxShine{0%{transform:translateX(-160%) rotate(18deg)}100%{transform:translateX(340%) rotate(18deg)}}body>*{position:relative;z-index:1;animation:mxEnter .65s cubic-bezier(.2,.8,.2,1) both}img{display:block!important;opacity:1!important;visibility:visible!important;animation:mxIcon 3.8s ease-in-out infinite!important}button{position:relative;overflow:hidden;transition:transform .2s ease,filter .2s ease,box-shadow .2s ease!important;animation:mxPulse 3.4s ease-in-out infinite}button:hover{transform:translateY(-2px) scale(1.018);filter:brightness(1.08)}button:active{transform:scale(.985)}button:after{content:"";position:absolute;inset:-40% auto -40% -25%;width:25%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.34),transparent);transform:translateX(-160%) rotate(18deg);animation:mxShine 3.6s ease-in-out infinite;pointer-events:none}input,label,[class*=file],[class*=upload]{transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease!important}input:focus{transform:translateY(-1px);box-shadow:0 0 0 4px rgba(92,108,255,.12)!important}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}</style>';
-h=h.replace('</head>',motionCss+'</head>');
+h=h.split('__ICON__').join('/cinemamax-icon.jpg?v=5');
+h=h.replace(/<img\\b([^>]*?)src=["'][^"']*["']([^>]*)>/gi,(m,p1,p2)=>'<img'+p1+'src="/cinemamax-icon.jpg?v=5"'+p2+'>');
 document.open();document.write(h);document.close();
 })();<\/script></body></html>`;
 
@@ -34,13 +49,15 @@ export default {
       return new Response(BOOT_PAGE, {
         headers: {
           'content-type':'text/html; charset=utf-8',
-          'cache-control':'no-store, no-cache, must-revalidate',
+          'cache-control':'no-store, no-cache, must-revalidate, max-age=0',
           'pragma':'no-cache',
+          'expires':'0',
           'x-content-type-options':'nosniff',
           'referrer-policy':'no-referrer',
           'x-frame-options':'DENY',
-          'permissions-policy':'camera=(), microphone=(), geolocation=(), payment=()',
-          'cross-origin-opener-policy':'same-origin'
+          'permissions-policy':'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()',
+          'cross-origin-opener-policy':'same-origin',
+          'cross-origin-resource-policy':'same-origin'
         }
       });
     }
@@ -59,7 +76,14 @@ export default {
         const bin = atob(APP_ICON_BASE64);
         const bytes = new Uint8Array(bin.length);
         for (let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-        return new Response(bytes, {headers:{'content-type':'image/jpeg','content-length':String(bytes.byteLength),'cache-control':'no-store','x-content-type-options':'nosniff'}});
+        return new Response(bytes, {
+          headers: {
+            'content-type':'image/jpeg',
+            'content-length':String(bytes.byteLength),
+            'cache-control':'public, max-age=3600',
+            'x-content-type-options':'nosniff'
+          }
+        });
       } catch {
         return new Response('Icon unavailable', {status:500});
       }
