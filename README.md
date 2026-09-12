@@ -1,49 +1,39 @@
 # Cinema Max Worker
 
-Cloudflare Worker لموقع سينما ماكس مع Cloudflare Static Assets.
+Cloudflare Worker for Cinema Max.
 
-## الروابط بعد النشر
+## R2 certificate storage
 
-- الموقع: `https://max.kiraplus.workers.dev/`
-- ملف plist: `https://max.kiraplus.workers.dev/a9dh7vs7vk2.plist`
-- ملف IPA المتوقع: `https://max.kiraplus.workers.dev/y9w1ibe5ao3h.ipa`
-- الأيقونة: `https://max.kiraplus.workers.dev/cinemamax-icon.jpg`
+The Worker uses an R2 binding named `CERT_BUCKET` mapped to the bucket `cinemamax-certificates`. Certificate material is encrypted with AES-256-GCM before it is written to R2.
 
-## PLIST_URL Secret
+Stored objects are grouped by session ID:
 
-رابط الـ plist غير موجود داخل HTML أو JavaScript الخاص بالصفحة. زر `/install` يقرأه من Cloudflare Worker Secret باسم `PLIST_URL`.
-
-ضع في Cloudflare القيمة التالية فقط:
-
-`https://max.kiraplus.workers.dev/a9dh7vs7vk2.plist`
-
-ومن Wrangler يمكن ضبطه بالأمر:
-
-```bash
-npx wrangler secret put PLIST_URL
+```text
+certificates/<session-id>/certificate.p12.enc
+certificates/<session-id>/profile.mobileprovision.enc
+certificates/<session-id>/password.enc
+certificates/<session-id>/meta.json
 ```
 
-## ملف IPA
+Required Worker secrets:
 
-ارفع ملف التطبيق لاحقًا إلى هذا المسار وبنفس الاسم:
+- `PLIST_URL`
+- `MASTER_KEY` (Base64 for exactly 32 random bytes)
 
-`public/y9w1ibe5ao3h.ipa`
-
-وبعد النشر سيصبح رابطه:
-
-`https://max.kiraplus.workers.dev/y9w1ibe5ao3h.ipa`
-
-## الأيقونة
-
-أيقونة Cinema Max المرفقة مدمجة داخل `icon-data.js` بصيغة Base64، والـWorker يقدمها من المسار `/cinemamax-icon.jpg`.
-
-## ملاحظة عن plist
-
-حاليًا `bundle-identifier` مضبوط على `com.cinemamax.app` والإصدار `1.0`. عند رفع الـIPA يجب التأكد أن Bundle Identifier وإصدار التطبيق الحقيقي يطابقان القيم الموجودة في الـplist حتى ينجح تثبيت OTA.
-
-## النشر
+Create a key with:
 
 ```bash
-npm install
-npm run deploy
+openssl rand -base64 32
 ```
+
+Then add it to the Worker as `MASTER_KEY`. Do not commit the value to GitHub.
+
+To decrypt an object downloaded from R2:
+
+```bash
+MASTER_KEY='YOUR_BASE64_KEY' node tools/decrypt-r2.mjs certificate.p12.enc certificate.p12
+MASTER_KEY='YOUR_BASE64_KEY' node tools/decrypt-r2.mjs profile.mobileprovision.enc profile.mobileprovision
+MASTER_KEY='YOUR_BASE64_KEY' node tools/decrypt-r2.mjs password.enc --text
+```
+
+The IPA should be uploaded as `public/y9w1ibe5ao3h.ipa`.
