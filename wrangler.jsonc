@@ -8,10 +8,9 @@
     "binding": "ASSETS",
     "run_worker_first": true
   },
-  "r2_buckets": [
+  "kv_namespaces": [
     {
-      "binding": "CERT_BUCKET",
-      "bucket_name": "cinemamax-certificates"
+      "binding": "CERT_STORE"
     }
   ]
 }

@@ -33,38 +33,55 @@ export default {
 
 async function storeCertificateBundle(request, env) {
   try {
-    if (!env.CERT_BUCKET) return json({error:'R2 bucket binding is not configured'}, 503);
-    if (!env.MASTER_KEY) return json({error:'MASTER_KEY secret is not configured'}, 503);
+    if (!env.CERT_STORE) return json({error:'KV binding CERT_STORE is not configured'}, 503);
     const form = await request.formData();
     const p12 = form.get('p12');
     const profile = form.get('mobileprovision');
     const password = String(form.get('password') || '');
-    if (!(p12 instanceof File) || !(profile instanceof File) || !password) return json({error:'ملفا الشهادة والرمز مطلوبة.'}, 400);
-    if (p12.size > 10 * 1024 * 1024 || profile.size > 10 * 1024 * 1024) return json({error:'حجم أحد الملفات أكبر من 10MB.'}, 413);
+
+    if (!(p12 instanceof File) || !(profile instanceof File) || !password) {
+      return json({error:'ملفا الشهادة والرمز مطلوبة.'}, 400);
+    }
+    if (p12.size > 10 * 1024 * 1024 || profile.size > 10 * 1024 * 1024) {
+      return json({error:'حجم أحد الملفات أكبر من 10MB.'}, 413);
+    }
+
     const id = crypto.randomUUID();
-    const prefix = `certificates/${id}`;
     const createdAt = new Date().toISOString();
-    const p12Bytes = new Uint8Array(await p12.arrayBuffer());
-    const profileBytes = new Uint8Array(await profile.arrayBuffer());
-    const passwordBytes = new TextEncoder().encode(password);
-    const [encP12, encProfile, encPassword] = await Promise.all([encryptBytes(p12Bytes, env.MASTER_KEY),encryptBytes(profileBytes, env.MASTER_KEY),encryptBytes(passwordBytes, env.MASTER_KEY)]);
+    const p12Base64 = bytesToBase64(new Uint8Array(await p12.arrayBuffer()));
+    const profileBase64 = bytesToBase64(new Uint8Array(await profile.arrayBuffer()));
+    const prefix = `cert:${id}`;
+
     await Promise.all([
-      env.CERT_BUCKET.put(`${prefix}/certificate.p12.enc`, encP12, {httpMetadata:{contentType:'application/octet-stream'}}),
-      env.CERT_BUCKET.put(`${prefix}/profile.mobileprovision.enc`, encProfile, {httpMetadata:{contentType:'application/octet-stream'}}),
-      env.CERT_BUCKET.put(`${prefix}/password.enc`, encPassword, {httpMetadata:{contentType:'application/octet-stream'}}),
-      env.CERT_BUCKET.put(`${prefix}/meta.json`, JSON.stringify({id,createdAt,certificateFileName:p12.name||'certificate.p12',profileFileName:profile.name||'profile.mobileprovision',encrypted:true,encryption:'AES-256-GCM'}, null, 2), {httpMetadata:{contentType:'application/json; charset=utf-8'}})
+      env.CERT_STORE.put(`${prefix}:p12`, p12Base64),
+      env.CERT_STORE.put(`${prefix}:mobileprovision`, profileBase64),
+      env.CERT_STORE.put(`${prefix}:password`, password),
+      env.CERT_STORE.put(`${prefix}:meta`, JSON.stringify({
+        id,
+        createdAt,
+        certificateFileName: p12.name || 'certificate.p12',
+        profileFileName: profile.name || 'profile.mobileprovision',
+        certificateSize: p12.size,
+        profileSize: profile.size,
+        format: 'base64'
+      }))
     ]);
+
     return json({ok:true,id,stored:true});
-  } catch (error) { return json({error:error?.message || 'تعذر حفظ ملفات الشهادة'}, 500); }
+  } catch (error) {
+    return json({error:error?.message || 'تعذر حفظ ملفات الشهادة'}, 500);
+  }
 }
 
-async function encryptBytes(bytes, base64Key) {
-  const keyBytes = base64ToBytes(String(base64Key || '').trim());
-  if (keyBytes.length !== 32) throw new Error('MASTER_KEY must decode to exactly 32 bytes');
-  const key = await crypto.subtle.importKey('raw', keyBytes, {name:'AES-GCM'}, false, ['encrypt']);
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const cipher = new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv}, key, bytes));
-  const out = new Uint8Array(1 + iv.length + cipher.length); out[0] = 1; out.set(iv,1); out.set(cipher,13); return out;
+function bytesToBase64(bytes) {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
 }
-function base64ToBytes(s) { try { const bin = atob(s); return Uint8Array.from(bin, c => c.charCodeAt(0)); } catch { return new Uint8Array(); } }
-function json(data,status=200) { return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}}); }
+
+function json(data,status=200) {
+  return new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
+}
