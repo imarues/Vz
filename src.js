@@ -1,7 +1,7 @@
 import iconData from './icon-data.js';
 
 const APP_ICON_BASE64 = iconData;
-const ICON_URL = 'https://max.kiraplus.workers.dev/Cinemamax.jpg';
+const ICON_URL = 'https://max.kiraplus.workers.dev/Cinemamax.jpg.PNG';
 
 function pageHtml() {
   return `<!doctype html>
@@ -66,7 +66,7 @@ export default {
   async fetch(request, env) {
     const url=new URL(request.url);
     if(request.method==='GET'&&(url.pathname==='/'||url.pathname==='/index.html'))return new Response(pageHtml(),{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store, no-cache, must-revalidate, max-age=0','pragma':'no-cache','expires':'0','x-content-type-options':'nosniff','referrer-policy':'no-referrer','x-frame-options':'DENY','permissions-policy':'camera=(), microphone=(), geolocation=(), payment=()'}});
-    if(request.method==='GET'&&url.pathname==='/Cinemamax.jpg'){
+    if(request.method==='GET'&&url.pathname==='/Cinemamax.jpg.PNG'){
       try{
         const bin=atob(APP_ICON_BASE64);
         const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));
