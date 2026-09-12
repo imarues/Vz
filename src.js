@@ -1,16 +1,9 @@
-import iconChunk0 from './icon/chunk0.js';
-import iconChunk1 from './icon/chunk1.js';
-import iconChunk2 from './icon/chunk2.js';
-import iconChunk3 from './icon/chunk3.js';
-import iconChunk4 from './icon/chunk4.js';
-import iconChunk5 from './icon/chunk5.js';
-import iconChunk6 from './icon/chunk6.js';
-import iconChunk7 from './icon/chunk7.js';
-import iconChunk8 from './icon/chunk8.js';
+import iconData from './icon-data.js';
+
 
 const APP_NAME = 'سينما ماكس';
 const APP_VERSION = '1.0';
-const APP_ICON_BASE64 = [iconChunk0,iconChunk1,iconChunk2,iconChunk3,iconChunk4,iconChunk5,iconChunk6,iconChunk7,iconChunk8].join('');
+const APP_ICON_BASE64 = iconData;
 
 const html = `<!doctype html>
 <html lang="ar" dir="rtl">
